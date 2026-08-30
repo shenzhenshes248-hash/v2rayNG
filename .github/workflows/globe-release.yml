@@ -1,0 +1,131 @@
+name: Build signed v2rayNG Globe APKs
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - codex/globe-notification
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code and native submodules
+        uses: actions/checkout@v7
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v4
+        with:
+          log-accepted-android-sdk-licenses: false
+          cmdline-tools-version: "14742923"
+          packages: "platforms;android-37.0 build-tools;37.0.0 platform-tools"
+
+      - name: Install exact NDK
+        run: |
+          echo "y" | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" \
+            --channel=0 \
+            --install "ndk;29.0.14206865"
+          echo "NDK_HOME=$ANDROID_HOME/ndk/29.0.14206865" >> "$GITHUB_ENV"
+          sed -i '10i\
+          \
+              ndkVersion = "29.0.14206865"' V2rayNG/app/build.gradle.kts
+
+      - name: Build libhevtun
+        run: bash compile-hevtun.sh
+
+      - name: Copy libhevtun
+        run: cp -r libs V2rayNG/app
+
+      - name: Resolve AndroidLibXrayLite tag
+        run: |
+          pushd AndroidLibXrayLite
+          CURRENT_TAG="$(git describe --tags --abbrev=0)"
+          echo "CURRENT_TAG=$CURRENT_TAG" >> "$GITHUB_ENV"
+          popd
+
+      - name: Download matching libv2ray
+        uses: robinraju/release-downloader@v1.13
+        with:
+          repository: 2dust/AndroidLibXrayLite
+          tag: ${{ env.CURRENT_TAG }}
+          fileName: libv2ray.aar
+          out-file-path: V2rayNG/app/libs/
+
+      - name: Setup Java
+        uses: actions/setup-java@v6.0.0
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Restore Globe signing key
+        env:
+          GLOBE_KEYSTORE_BASE64: ${{ secrets.GLOBE_KEYSTORE_BASE64 }}
+        run: |
+          test -n "$GLOBE_KEYSTORE_BASE64"
+          GLOBE_KEYSTORE_PATH="$RUNNER_TEMP/v2rayng-globe-release.jks"
+          printf '%s' "$GLOBE_KEYSTORE_BASE64" | base64 --decode > "$GLOBE_KEYSTORE_PATH"
+          chmod 600 "$GLOBE_KEYSTORE_PATH"
+          echo "GLOBE_KEYSTORE_PATH=$GLOBE_KEYSTORE_PATH" >> "$GITHUB_ENV"
+
+      - name: Test and build signed Globe release APKs
+        working-directory: V2rayNG
+        env:
+          GLOBE_KEYSTORE_PASSWORD: ${{ secrets.GLOBE_KEYSTORE_PASSWORD }}
+          GLOBE_KEY_ALIAS: ${{ secrets.GLOBE_KEY_ALIAS }}
+          GLOBE_KEY_PASSWORD: ${{ secrets.GLOBE_KEY_PASSWORD }}
+        run: |
+          echo "sdk.dir=$ANDROID_HOME" > local.properties
+          chmod 755 gradlew
+          ./gradlew :app:testGlobeDebugUnitTest :app:assembleGlobeRelease \
+            -Pandroid.injected.signing.store.file="$GLOBE_KEYSTORE_PATH" \
+            -Pandroid.injected.signing.store.password="$GLOBE_KEYSTORE_PASSWORD" \
+            -Pandroid.injected.signing.key.alias="$GLOBE_KEY_ALIAS" \
+            -Pandroid.injected.signing.key.password="$GLOBE_KEY_PASSWORD"
+
+      - name: Verify package, label, signature, icon, and native libraries
+        run: |
+          set -euo pipefail
+          APK_DIR="V2rayNG/app/build/outputs/apk/globe/release"
+          VERIFY_DIR="$RUNNER_TEMP/globe-verification"
+          AAPT="$ANDROID_HOME/build-tools/37.0.0/aapt"
+          APKSIGNER="$ANDROID_HOME/build-tools/37.0.0/apksigner"
+          mkdir -p "$VERIFY_DIR"
+          shopt -s nullglob
+          APKS=("$APK_DIR"/*.apk)
+          test "${#APKS[@]}" -eq 5
+          for APK in "${APKS[@]}"; do
+            NAME="$(basename "$APK")"
+            BADGING="$($AAPT dump badging "$APK")"
+            grep -F "package: name='com.v2ray.ang.globe'" <<< "$BADGING"
+            grep -F "application-label:'v2rayNG Globe'" <<< "$BADGING"
+            unzip -l "$APK" | grep -F 'res/drawable/ic_stat_globe.xml'
+            "$APKSIGNER" verify --verbose --print-certs "$APK" > "$VERIFY_DIR/$NAME.txt"
+            grep -F 'Verified using v2 scheme (APK Signature Scheme v2): true' "$VERIFY_DIR/$NAME.txt"
+          done
+          ARM64_APK=("$APK_DIR"/*arm64-v8a*.apk)
+          UNIVERSAL_APK=("$APK_DIR"/*universal*.apk)
+          test "${#ARM64_APK[@]}" -eq 1
+          test "${#UNIVERSAL_APK[@]}" -eq 1
+          unzip -l "${ARM64_APK[0]}" | grep -F 'lib/arm64-v8a/libgojni.so'
+          unzip -l "${ARM64_APK[0]}" | grep -F 'lib/arm64-v8a/libhev-socks5-tunnel.so'
+          for ABI in arm64-v8a armeabi-v7a x86 x86_64; do
+            unzip -l "${UNIVERSAL_APK[0]}" | grep -F "lib/$ABI/libgojni.so"
+            unzip -l "${UNIVERSAL_APK[0]}" | grep -F "lib/$ABI/libhev-socks5-tunnel.so"
+          done
+          grep -F 'Signer #1 certificate SHA-256 digest: 81361f641498d6d64bbc17bd835943d5f5d66653b14b9d698a9d4f912b7c7894' "$VERIFY_DIR"/*.txt
+
+      - name: Upload signed Globe APKs and verification
+        uses: actions/upload-artifact@v7
+        with:
+          name: v2rayNG-globe-signed-release
+          path: |
+            V2rayNG/app/build/outputs/apk/globe/release/*.apk
+            ${{ runner.temp }}/globe-verification/*.txt
+          if-no-files-found: error
