@@ -59,6 +59,12 @@ android {
             dimension = "distribution"
             buildConfigField("String", "DISTRIBUTION", "\"Play Store\"")
         }
+        create("globe") {
+            dimension = "distribution"
+            applicationId = "com.v2ray.ang.globe"
+            buildConfigField("String", "DISTRIBUTION", "\"Globe\"")
+            resValue("string", "app_name", "v2rayNG Globe")
+        }
     }
 
     sourceSets {
