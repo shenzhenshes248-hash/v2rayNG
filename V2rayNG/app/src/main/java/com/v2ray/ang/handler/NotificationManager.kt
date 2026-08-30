@@ -288,4 +288,3 @@ object NotificationManager {
         return CoreServiceManager.serviceControl?.get()?.getService()
     }
 }
-
