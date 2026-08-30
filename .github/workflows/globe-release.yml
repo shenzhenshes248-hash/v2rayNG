@@ -119,7 +119,7 @@ jobs:
             unzip -l "${UNIVERSAL_APK[0]}" | grep -F "lib/$ABI/libgojni.so"
             unzip -l "${UNIVERSAL_APK[0]}" | grep -F "lib/$ABI/libhev-socks5-tunnel.so"
           done
-          grep -F 'Signer #1 certificate SHA-256 digest: 81361f641498d6d64bbc17bd835943d5f5d66653b14b9d698a9d4f912b7c7894' "$VERIFY_DIR"/*.txt
+          grep -iF 'Signer #1 certificate SHA-256 digest: 81361f641498d6d64bbc17bd835943d5f5d66653b14b9d698a9d4f912b7c7894' "$VERIFY_DIR"/*.txt
 
       - name: Upload signed Globe APKs and verification
         uses: actions/upload-artifact@v7
