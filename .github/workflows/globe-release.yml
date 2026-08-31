@@ -114,7 +114,8 @@ jobs:
             NAME="$(basename "$APK")"
             BADGING="$($AAPT dump badging "$APK")"
             grep -F "package: name='com.v2ray.ang.globe'" <<< "$BADGING"
-            grep -F "application-label:'v2rayNG Globe'" <<< "$BADGING"
+            grep -F "application-label:'Globe VPN'" <<< "$BADGING"
+            ! grep -E "^application-label[^:]*:'v2rayNG'$" <<< "$BADGING"
             "$AAPT" dump resources "$APK" | grep -F 'drawable/ic_stat_globe'
             "$APKSIGNER" verify --verbose --print-certs "$APK" > "$VERIFY_DIR/$NAME.txt" 2>&1
             grep -F 'Verified using v2 scheme (APK Signature Scheme v2): true' "$VERIFY_DIR/$NAME.txt"
