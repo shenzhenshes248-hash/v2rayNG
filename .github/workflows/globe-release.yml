@@ -129,6 +129,30 @@ jobs:
           UNIVERSAL_APK=("$APK_DIR"/*universal*.apk)
           test "${#ARM64_APK[@]}" -eq 1
           test "${#UNIVERSAL_APK[@]}" -eq 1
+          "$ANDROID_HOME/cmdline-tools/latest/bin/apkanalyzer" dex code \
+            --class com.v2ray.ang.handler.NotificationManager \
+            "${ARM64_APK[0]}" > "$VERIFY_DIR/NotificationManager.smali"
+          GLOBE_RESOURCE_ID="$($AAPT dump resources "${ARM64_APK[0]}" | \
+            sed -n 's/^ *resource \(0x[0-9a-fA-F]*\).*drawable\/ic_stat_globe.*/\1/p' | head -n 1)"
+          test -n "$GLOBE_RESOURCE_ID"
+          grep -F 'setSmallIcon(I)' "$VERIFY_DIR/NotificationManager.smali"
+          grep -iF "$GLOBE_RESOURCE_ID" "$VERIFY_DIR/NotificationManager.smali"
+          echo "Foreground notification globe resource ID: $GLOBE_RESOURCE_ID" \
+            > "$VERIFY_DIR/foreground-notification-icon.txt"
+          curl -fsSL https://github.com/skylot/jadx/releases/download/v1.5.5/jadx-1.5.5.zip \
+            -o "$RUNNER_TEMP/jadx.zip"
+          unzip -q "$RUNNER_TEMP/jadx.zip" -d "$RUNNER_TEMP/jadx"
+          chmod 755 "$RUNNER_TEMP/jadx/bin/jadx"
+          "$RUNNER_TEMP/jadx/bin/jadx" \
+            --single-class com.v2ray.ang.handler.NotificationManager \
+            --single-class-output "$VERIFY_DIR/NotificationManager.java" \
+            "${ARM64_APK[0]}" || test -s "$VERIFY_DIR/NotificationManager.java"
+          grep -F 'setSmallIcon(R.drawable.ic_stat_globe)' \
+            "$VERIFY_DIR/NotificationManager.java"
+          test "$(grep -cF 'setSmallIcon(R.drawable.ic_stat_globe)' \
+            "$VERIFY_DIR/NotificationManager.java")" -eq 5
+          ! grep -E 'setSmallIcon\(R\.drawable\.ic_stat_(name|proxy|direct)\)' \
+            "$VERIFY_DIR/NotificationManager.java"
           unzip -l "${ARM64_APK[0]}" | grep -F 'lib/arm64-v8a/libgojni.so'
           unzip -l "${ARM64_APK[0]}" | grep -F 'lib/arm64-v8a/libhev-socks5-tunnel.so'
           for ABI in arm64-v8a armeabi-v7a x86 x86_64; do
@@ -143,4 +167,6 @@ jobs:
           path: |
             V2rayNG/app/build/outputs/apk/globe/release/*.apk
             ${{ runner.temp }}/globe-verification/*.txt
+            ${{ runner.temp }}/globe-verification/*.smali
+            ${{ runner.temp }}/globe-verification/*.java
           if-no-files-found: error
