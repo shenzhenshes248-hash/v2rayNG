@@ -99,6 +99,7 @@ jobs:
           APK_DIR="V2rayNG/app/build/outputs/apk/globe/release"
           VERIFY_DIR="$RUNNER_TEMP/globe-verification"
           AAPT="$ANDROID_HOME/build-tools/37.0.0/aapt"
+          AAPT2="$ANDROID_HOME/build-tools/37.0.0/aapt2"
           APKSIGNER="$ANDROID_HOME/build-tools/37.0.0/apksigner"
           mkdir -p "$VERIFY_DIR"
           shopt -s nullglob
@@ -115,7 +116,7 @@ jobs:
             NAME="$(basename "$APK")"
             BADGING="$($AAPT dump badging "$APK")"
             grep -F "package: name='com.v2ray.ang.globe'" <<< "$BADGING"
-            grep -F "versionCode='4000751'" <<< "$BADGING"
+            grep -F "versionCode='4000752'" <<< "$BADGING"
             grep -F "application-label:'Globe VPN'" <<< "$BADGING"
             ! grep -E "^application-label[^:]*:'v2rayNG'$" <<< "$BADGING"
             "$AAPT" dump resources "$APK" | grep -F 'drawable/ic_stat_globe'
@@ -139,6 +140,16 @@ jobs:
           GLOBE_RESOURCE_ID="$($AAPT dump resources "${ARM64_APK[0]}" | \
             sed -n 's/^ *resource \(0x[0-9a-fA-F]*\).*drawable\/ic_stat_globe.*/\1/p' | head -n 1)"
           test -n "$GLOBE_RESOURCE_ID"
+          GLOBE_XML_PATH="$($AAPT dump resources "${ARM64_APK[0]}" | \
+            grep -A1 'drawable/ic_stat_globe' | \
+            sed -n 's/.*(file) \([^ ]*\.xml\).*/\1/p' | head -n 1)"
+          test -n "$GLOBE_XML_PATH"
+          "$AAPT2" dump xmltree --file "$GLOBE_XML_PATH" "${ARM64_APK[0]}" \
+            > "$VERIFY_DIR/ic_stat_globe.xmltree.txt"
+          ! grep -F 'strokeColor' "$VERIFY_DIR/ic_stat_globe.xmltree.txt"
+          ! grep -F 'strokeWidth' "$VERIFY_DIR/ic_stat_globe.xmltree.txt"
+          test "$(grep -cF 'E: path' "$VERIFY_DIR/ic_stat_globe.xmltree.txt")" -eq 3
+          test "$(grep -cE 'fillColor.*#ffffffff' "$VERIFY_DIR/ic_stat_globe.xmltree.txt")" -eq 3
           grep -F 'setSmallIcon(I)' "$VERIFY_DIR/NotificationManager.smali"
           test "$(grep -cF 'setSmallIcon(I)' "$VERIFY_DIR/NotificationManager.smali")" -eq 5
           ! grep -F 'android.app.preferSmallIcon' "$VERIFY_DIR/NotificationManager.smali"
