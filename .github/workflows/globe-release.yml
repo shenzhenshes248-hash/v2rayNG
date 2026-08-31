@@ -140,7 +140,7 @@ jobs:
           GLOBE_RESOURCE_ID="$($AAPT dump resources "${ARM64_APK[0]}" | \
             sed -n 's/^ *resource \(0x[0-9a-fA-F]*\).*drawable\/ic_stat_globe.*/\1/p' | head -n 1)"
           test -n "$GLOBE_RESOURCE_ID"
-          GLOBE_XML_PATH="$($AAPT dump resources "${ARM64_APK[0]}" | \
+          GLOBE_XML_PATH="$($AAPT2 dump resources "${ARM64_APK[0]}" | \
             grep -A1 'drawable/ic_stat_globe' | \
             sed -n 's/.*(file) \([^ ]*\.xml\).*/\1/p' | head -n 1)"
           test -n "$GLOBE_XML_PATH"
