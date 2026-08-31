@@ -9,6 +9,7 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.Color
 import android.os.Build
+import android.os.Bundle
 import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
 import com.v2ray.ang.AppConfig
@@ -33,6 +34,7 @@ object NotificationManager {
     private const val NOTIFICATION_PENDING_INTENT_RESTART_V2RAY = 2
     private const val NOTIFICATION_ICON_THRESHOLD = 3000
     private const val QUERY_INTERVAL_MS = 3000L
+    private const val EXTRA_PREFER_SMALL_ICON = "android.app.preferSmallIcon"
 
     private var lastQueryTime = 0L
     private var mBuilder: NotificationCompat.Builder? = null
@@ -98,6 +100,7 @@ object NotificationManager {
             .setOngoing(true)
             .setShowWhen(false)
             .setOnlyAlertOnce(true)
+            .setExtras(Bundle().apply { putBoolean(EXTRA_PREFER_SMALL_ICON, true) })
             .setContentIntent(contentPendingIntent)
             .addAction(
                 R.drawable.ic_delete_24dp,
