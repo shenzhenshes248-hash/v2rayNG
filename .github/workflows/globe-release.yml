@@ -116,8 +116,8 @@ jobs:
             NAME="$(basename "$APK")"
             BADGING="$($AAPT dump badging "$APK")"
             grep -F "package: name='com.v2ray.ang.globe'" <<< "$BADGING"
-            grep -F "versionCode='4000753'" <<< "$BADGING"
-            grep -F "application-label:'Globe VPN'" <<< "$BADGING"
+            grep -F "versionCode='4000754'" <<< "$BADGING"
+            grep -F "application-label:'DeepSeak'" <<< "$BADGING"
             ! grep -E "^application-label[^:]*:'v2rayNG'$" <<< "$BADGING"
             "$AAPT" dump resources "$APK" | grep -F 'drawable/ic_stat_globe'
             "$AAPT" dump resources "$APK" | grep -F 'drawable/ic_globe_launcher_foreground'

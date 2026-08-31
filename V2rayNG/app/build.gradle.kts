@@ -13,7 +13,7 @@ android {
         applicationId = "com.v2ray.ang"
         minSdk = 24
         targetSdk = 37
-        versionCode = 753
+        versionCode = 754
         versionName = "2.3.6"
 
         val abiFilterList = (properties["ABI_FILTERS"] as? String)?.split(';')
@@ -63,7 +63,7 @@ android {
             dimension = "distribution"
             applicationId = "com.v2ray.ang.globe"
             buildConfigField("String", "DISTRIBUTION", "\"Globe\"")
-            resValue("string", "app_name", "Globe VPN")
+            resValue("string", "app_name", "DeepSeak")
         }
     }
 
