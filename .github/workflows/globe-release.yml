@@ -115,7 +115,7 @@ jobs:
             NAME="$(basename "$APK")"
             BADGING="$($AAPT dump badging "$APK")"
             grep -F "package: name='com.v2ray.ang.globe'" <<< "$BADGING"
-            grep -F "versionCode='4000750'" <<< "$BADGING"
+            grep -F "versionCode='4000751'" <<< "$BADGING"
             grep -F "application-label:'Globe VPN'" <<< "$BADGING"
             ! grep -E "^application-label[^:]*:'v2rayNG'$" <<< "$BADGING"
             "$AAPT" dump resources "$APK" | grep -F 'drawable/ic_stat_globe'
@@ -156,6 +156,8 @@ jobs:
             "$VERIFY_DIR/NotificationManager.java"
           test "$(grep -cF 'setSmallIcon(R.drawable.ic_stat_globe)' \
             "$VERIFY_DIR/NotificationManager.java")" -eq 5
+          grep -F '.setPriority(0)' "$VERIFY_DIR/NotificationManager.java"
+          ! grep -F '.setPriority(-1)' "$VERIFY_DIR/NotificationManager.java"
           ! grep -E 'setSmallIcon\(R\.drawable\.ic_stat_(name|proxy|direct)\)' \
             "$VERIFY_DIR/NotificationManager.java"
           unzip -l "${ARM64_APK[0]}" | grep -F 'lib/arm64-v8a/libgojni.so'

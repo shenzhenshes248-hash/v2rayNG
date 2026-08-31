@@ -94,7 +94,7 @@ object NotificationManager {
         mBuilder = NotificationCompat.Builder(service, channelId)
             .setSmallIcon(R.drawable.ic_stat_globe)
             .setContentTitle(currentConfig?.remarks ?: service.getString(R.string.app_name))
-            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .setOngoing(true)
             .setShowWhen(false)
             .setOnlyAlertOnce(true)
