@@ -122,7 +122,9 @@ object NotificationManager {
      */
     fun ensureForeground() {
         val service = getService() ?: return
-        val notification = mBuilder?.build()
+        val notification = mBuilder
+            ?.setSmallIcon(R.drawable.ic_stat_globe)
+            ?.build()
         if (notification == null) showNotification(null) else service.startForeground(NOTIFICATION_ID, notification)
     }
 
