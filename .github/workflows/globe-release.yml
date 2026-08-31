@@ -135,10 +135,9 @@ jobs:
           GLOBE_RESOURCE_ID="$($AAPT dump resources "${ARM64_APK[0]}" | \
             sed -n 's/^ *resource \(0x[0-9a-fA-F]*\).*drawable\/ic_stat_globe.*/\1/p' | head -n 1)"
           test -n "$GLOBE_RESOURCE_ID"
-          GLOBE_RESOURCE_DECIMAL="$((GLOBE_RESOURCE_ID))"
           grep -F 'setSmallIcon(I)' "$VERIFY_DIR/NotificationManager.smali"
-          grep -F "$GLOBE_RESOURCE_DECIMAL" "$VERIFY_DIR/NotificationManager.smali"
-          echo "Foreground notification globe resource ID: $GLOBE_RESOURCE_ID ($GLOBE_RESOURCE_DECIMAL)" \
+          test "$(grep -cF 'setSmallIcon(I)' "$VERIFY_DIR/NotificationManager.smali")" -eq 5
+          echo "Foreground notification globe resource ID: $GLOBE_RESOURCE_ID" \
             > "$VERIFY_DIR/foreground-notification-icon.txt"
           curl -fsSL https://github.com/skylot/jadx/releases/download/v1.5.5/jadx-1.5.5.zip \
             -o "$RUNNER_TEMP/jadx.zip"
